@@ -15,11 +15,112 @@ Synopsis: Immediately after the title, there should be a synopsis which describe
 
 ## Data Processing
 
+### Setup
+
+Loading libraries
+
+```{r}
+library(tidyverse)
+```
+
+Setting seed for reproducibility
+
+```{r}
+set.seed(144)
+```
+
+Showing current environment
+
+```{r}
+sessionInfo()
+```
+
+
+Downloading the dataset
+
+```{r, cache = TRUE}
+download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2", "stormdata.csv.bz2")
+```
+
+Read dataset into variable removing blank spaces and transform into tidyverse compatible
+
+```{r, cache = TRUE}
+storm_data <- as_tibble(read.csv(file = "stormdata.csv.bz2", na.strings = ""))
+```
+
+Get a glimpse of the data
+```{r}
+glimpse(storm_data)
+```
+
+Count NAs
+
+```{r}
+sum_na <- storm_data %>%
+    summarize_all(funs(sum(is.na(.))))
+glimpse(sum_na)
+```
+
+Select only needed data from the processed dataset
+
+```{r}
+filter_data <- storm_data %>% 
+    select(STATE, EVTYPE, FATALITIES, INJURIES, PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP)
+
+glimpse(filter_data)
+```
+
+Impute 0 to NAs
+
+```{r}
+tidy_storm <- filter_data %>%
+    replace(is.na(.), "0"
+    ) %>% 
+    mutate(PROPDMGEXP = as.character(PROPDMGEXP),
+           CROPDMGEXP = as.character(CROPDMGEXP))
+glimpse(tidy_storm)
+```
+
+```{r}
+unique_prop <- unique(tidy_storm$PROPDMGEXP)
+unique_crop <- unique(tidy_storm$CROPDMGEXP)
+
+unique_prop
+unique_crop
+```
+
+```{r}
+rep_prop <- c(1e3, 1e6, 0, 1e9, 1e6, 0, 1e5, 1e6, 0, 1e4, 1e2, 1e3, 1e2, 1e7, 1e2, 0, 1e1, 1e8)
+rep_crop <- c(0, 1e6, 1e3, 1e6, 1e9, 0, 1e3, 1e2)
+
+prop_dictionary <- cbind(unique_prop, rep_prop)
+crop_dictionary <- cbind(unique_crop, rep_crop)
+prop_dictionary
+crop_dictionary
+```
+
+Remap values using plyr
+
+
+```{r}
+tidy_storm$PROPDMGEXP <- plyr::mapvalues(tidy_storm$PROPDMGEXP, from = unique_prop, to = rep_prop)
+tidy_storm$CROPDMGEXP <- plyr::mapvalues(tidy_storm$CROPDMGEXP, from = unique_crop, to = rep_crop)
+
+tidy_storm <- tidy_storm %>% 
+    mutate(PROPDMGEXP = as.double(PROPDMGEXP),
+           CROPDMGEXP = as.double(CROPDMGEXP))
+
+glimpse(tidy_storm)
+```
+
+
 There should be a section titled Data Processing which describes (in words and code) how the data were loaded into R and processed for analysis. In particular, your analysis must start from the raw CSV file containing the data. You cannot do any preprocessing outside the document. If preprocessing is time-consuming you may consider using the cache=TRUE option for certain code chunks.
 
 The analysis document must have at least one figure containing a plot.  
 
 Your analysis must have no more than three figures. Figures may have multiple plots in them (i.e. panel plots), but there cannot be more than three figures total.
+
+
 
 ### Questions
 
