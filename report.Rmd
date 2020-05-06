@@ -1,7 +1,6 @@
 ---
-title: "Weather Report"
+title: "Weather Damage Report"
 author: "Victor Wildner"
-date: "5/5/2020"
 output: html_document
 ---
 
@@ -9,29 +8,270 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
 ```
 
-## Synopsis
+> The basic goal of this project is to explore the U.S. National Oceanic and Atmospheric Administration’s (NOAA) storm database, seeking to answer some questions about severe weather events. The main focus of this study is to enable full-research reproducibility, using literate programming for every step.
 
-Synopsis: Immediately after the title, there should be a synopsis which describes and summarizes your analysis in at most 10 complete sentences.
 
 ## Data Processing
 
-There should be a section titled Data Processing which describes (in words and code) how the data were loaded into R and processed for analysis. In particular, your analysis must start from the raw CSV file containing the data. You cannot do any preprocessing outside the document. If preprocessing is time-consuming you may consider using the cache=TRUE option for certain code chunks.
+### Setup
 
-The analysis document must have at least one figure containing a plot.  
+#### Loading libraries
 
-Your analysis must have no more than three figures. Figures may have multiple plots in them (i.e. panel plots), but there cannot be more than three figures total.
+```{r libs, echo=FALSE, results=FALSE}
+library(tidyverse)
+library(cowplot)
+```
 
-### Questions
+#### Setting seed for reproducibility
 
-1. Across the United States, which types of events (as indicated in the \color{red}{\verb|EVTYPE|}EVTYPE variable) are most harmful with respect to population health?
+```{r seed}
+set.seed(144)
+```
 
-2. Across the United States, which types of events have the greatest economic consequences?
+#### Showing current environment
 
-Consider writing your report as if it were to be read by a government or municipal manager who might be responsible for preparing for severe weather events and will need to prioritize resources for different types of events. However, there is no need to make any specific recommendations in your report.
+```{r sessioninfo}
+sessionInfo()
+```
+
+
+#### Downloading the dataset
+
+```{r download, cache = TRUE}
+# download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2", "stormdata.csv.bz2")
+```
+
+#### Read dataset into variable removing blank spaces and transform into tidyverse compatible
+
+```{r load_data, cache = TRUE}
+storm_data <- as_tibble(read.csv(file = "stormdata.csv.bz2", na.strings = ""))
+```
+
+#### Get a glimpse of the data
+```{r glimpse}
+glimpse(storm_data)
+```
+
+#### Count NAs
+
+```{r countnas}
+sum_na <- storm_data %>%
+    summarize_all(funs(sum(is.na(.))))
+glimpse(sum_na)
+```
+
+#### Select only needed data from the processed dataset
+
+```{r filterdata}
+filter_data <- storm_data %>% 
+    select(STATE, EVTYPE, FATALITIES, INJURIES, PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP)
+
+glimpse(filter_data)
+```
+
+#### Impute 0 to NAs
+
+```{r tidyone}
+tidy_storm <- filter_data %>%
+    replace(is.na(.), "0"
+    ) %>% 
+    mutate(PROPDMGEXP = as.character(PROPDMGEXP),
+           CROPDMGEXP = as.character(CROPDMGEXP))
+glimpse(tidy_storm)
+```
+
+#### Find unique values in prop and crop
+
+```{r findunique}
+unique_prop <- unique(tidy_storm$PROPDMGEXP)
+unique_crop <- unique(tidy_storm$CROPDMGEXP)
+
+unique_prop
+unique_crop
+```
+
+#### Create dictionary for the unique values
+
+```{r dictionary}
+rep_prop <- c(1e3, 1e6, 0, 1e9, 1e6, 0, 1e5, 1e6, 0, 1e4, 1e2, 1e3, 1e2, 1e7, 1e2, 0, 1e1, 1e8)
+rep_crop <- c(0, 1e6, 1e3, 1e6, 1e9, 0, 1e3, 1e2)
+
+prop_dictionary <- cbind(unique_prop, rep_prop)
+crop_dictionary <- cbind(unique_crop, rep_crop)
+prop_dictionary
+crop_dictionary
+```
+
+#### Remap values back into the tidy data set using plyr
+
+
+```{r tidy}
+tidy_storm$PROPDMGEXP <- plyr::mapvalues(tidy_storm$PROPDMGEXP, from = unique_prop, to = rep_prop)
+tidy_storm$CROPDMGEXP <- plyr::mapvalues(tidy_storm$CROPDMGEXP, from = unique_crop, to = rep_crop)
+
+tidy_storm <- tidy_storm %>% 
+    mutate(PROPDMGEXP = as.double(PROPDMGEXP),
+           CROPDMGEXP = as.double(CROPDMGEXP))
+
+glimpse(tidy_storm)
+```
+
+## Questions
+
+### 1. Across the United States, which types of events (as indicated in the EVTYPE variable are most harmful with respect to population health?
+
+#### Rank fatalities and injuries according to EVTYPE
+
+```{r nowquestion}
+sum_events_global <- tidy_storm %>%
+    select(-STATE) %>% 
+    group_by(EVTYPE) %>%
+    summarize_all(
+        list(sum)
+    )
+
+sum_fatalities_global <- sum_events_global %>% 
+    select(EVTYPE, FATALITIES) %>% 
+    arrange(desc(FATALITIES))
+
+sum_fatalities_top10 <- slice(sum_fatalities_global, 1:10)
+
+sum_injuries_global <- sum_events_global %>% 
+    select(EVTYPE, INJURIES) %>% 
+    arrange(desc(INJURIES))
+
+sum_injuries_top10 <- slice(sum_injuries_global, 1:10)
+
+```
+
+#### Plot results
+
+```{r plot1, warning=FALSE}
+plot1 <- ggplot(sum_fatalities_top10, aes(reorder(EVTYPE, -FATALITIES), FATALITIES, group = EVTYPE, alpha = EVTYPE)) +
+    geom_bar(stat = "identity") +
+    theme_minimal() +
+    theme(
+        axis.text.x = element_text(angle = 90),
+        legend.position = "none"
+          ) +
+    labs(
+        title = "Major Causes of Fatality",
+        x = "",
+        y = "Fatalities"
+    )
+
+plot2 <- ggplot(sum_injuries_top10, aes(reorder(EVTYPE, -INJURIES), INJURIES, group = EVTYPE, alpha = EVTYPE, fill = "red")) +
+    geom_bar(stat = "identity") +
+    theme_minimal() +
+    theme(
+        axis.text.x = element_text(angle = 90),
+        legend.position = "none"
+          ) +
+    labs(
+        title = "Major Causes of Injuries",
+        x = "",
+        y = "Injuries"
+    )
+plot_grid(plot1, plot2)
+```
+
+
+### 2. Across the United States, which types of events have the greatest economic consequences?
+
+### Prepare vars for measured and expected damage
+
+```{r measurednexpected}
+
+# Measured damage
+
+propdmg_global <- sum_events_global %>% 
+    select(EVTYPE, PROPDMG) %>% 
+    arrange(desc(PROPDMG))
+
+propdmg_top10 <- slice(propdmg_global, 1:10)
+
+cropdmg_global <- sum_events_global %>% 
+    select(EVTYPE, CROPDMG) %>% 
+    arrange(desc(CROPDMG))
+
+cropdmg_top10 <- slice(cropdmg_global, 1:10)
+
+# Expected damage
+exp_propdmg_global <- sum_events_global %>% 
+    select(EVTYPE, PROPDMGEXP) %>% 
+    arrange(desc(PROPDMGEXP))
+
+exp_propdmg_top10 <- slice(exp_propdmg_global, 1:10)
+
+exp_cropdmg_global <- sum_events_global %>% 
+    select(EVTYPE, CROPDMGEXP) %>% 
+    arrange(desc(CROPDMGEXP))
+
+exp_cropdmg_top10 <- slice(exp_cropdmg_global, 1:10)
+
+```
+#### Plot the results 
+
+```{r plot2, warning=FALSE}
+plot3 <- ggplot(propdmg_top10, aes(reorder(EVTYPE, -PROPDMG), PROPDMG, group = EVTYPE, alpha = EVTYPE)) +
+    geom_bar(stat = "identity", fill = "rosybrown") +
+    theme_minimal() +
+    theme(
+        axis.text.x = element_text(angle = 90),
+        legend.position = "none"
+          ) +
+    labs(
+        title = "Major Causes of Prop Damage",
+        x = "",
+        y = "Gross cost ($)"
+    )
+
+plot4 <- ggplot(cropdmg_top10, aes(reorder(EVTYPE, -CROPDMG), CROPDMG, group = EVTYPE, alpha = EVTYPE)) +
+    geom_bar(stat = "identity", fill = "navyblue") +
+    theme_minimal() +
+    theme(
+        axis.text.x = element_text(angle = 90),
+        legend.position = "none"
+          ) +
+    labs(
+        title = "Major Causes of Crop Damage",
+        x = "",
+        y = "Gross cost ($)"
+    )
+plot_grid(plot3, plot4)
+```
+```{r plot3, warning=FALSE}
+plot5 <- ggplot(exp_propdmg_top10, aes(reorder(EVTYPE, -PROPDMGEXP), PROPDMGEXP, group = EVTYPE, alpha = EVTYPE)) +
+    geom_bar(stat = "identity", fill = "firebrick") +
+    theme_minimal() +
+    theme(
+        axis.text.x = element_text(angle = 90),
+        legend.position = "none"
+          ) +
+    labs(
+        title = "Expected Causes of Prop Damage",
+        x = "",
+        y = "Gross cost ($)"
+    )
+
+plot6 <- ggplot(exp_cropdmg_top10, aes(reorder(EVTYPE, -CROPDMGEXP), CROPDMGEXP, group = EVTYPE, alpha = EVTYPE)) +
+    geom_bar(stat = "identity", fill = "slateblue3") +
+    theme_minimal() +
+    theme(
+        axis.text.x = element_text(angle = 90),
+        legend.position = "none"
+          ) +
+    labs(
+        title = "Expected Causes of Crop Damage",
+        x = "",
+        y = "Gross cost ($)"
+    )
+plot_grid(plot5, plot6, align = "hv")
+```
+
 
 ## Results
 
-There should be a section titled Results in which your results are presented.
+The extreme events that took most lives and caused most injuries in the United States are tornado, heat, and flash flood with tornado being about 2/3 of the total reported cases.
 
-
-Finale: In the preview window, click the Publish button.
+The events that had the most economic damage in the US are hurricanes, tornadoes, flood and drought.
