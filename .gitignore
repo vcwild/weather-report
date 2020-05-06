@@ -3,3 +3,6 @@
 .RData
 .Ruserdata
 weather-report.Rproj
+stormdata.csv.bz2
+/report_cache
+/rsconnect
