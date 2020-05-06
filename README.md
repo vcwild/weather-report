@@ -4,9 +4,9 @@ Weather Damage Report
 > The basic goal of this project is to explore the U.S. National Oceanic
 > and Atmospheric Administration’s (NOAA) storm database, seeking to
 > answer some questions about severe weather events. The main focus of
-> this study is to enable full-research reproducibility, using literate
+> this study is to allow full-research reproducibility, using literate
 > programming for every
-    step.
+    step in the analysis.
 
 ## Tools Used
 
@@ -20,12 +20,12 @@ Weather Damage Report
 ## Files
 
   - **Raw data set**: [Storm Database](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2)
-  - **[CODEBOOK](https://github.com/vcwild/weather-report/blob/process/report.html)**:
+  - **[CODEBOOK](https://github.com/vcwild/weather-report/blob/master/report.html)**:
     step-by-step book explaining the code
     processing.
-  - **[Figures](https://github.com/vcwild/rep-data/tree/master/PA1_template_files/figure-html)**:
+  - **[Figures](https://github.com/vcwild/weather-report/tree/master/report_files/figure-html)**:
     the plotted images
-  - **[PA1_template.Rmd](https://github.com/vcwild/rep-data/blob/master/PA1_template.Rmd)**: the script to compile the project from source
+  - **[report.Rmd](https://github.com/vcwild/weather-report/blob/master/report.Rmd)**: the script to compile the project from source
 
 ## Build from Source
 
@@ -34,7 +34,7 @@ Inside the project root folder, execute the following
 ```
 R
 library(rmarkdown)
-rmarkdown::render("PA1_template.Rmd", "html_document")
+rmarkdown::render("report.Rmd", "html_document")
 ```
 # CODEBOOK
 
