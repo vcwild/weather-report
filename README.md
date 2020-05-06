@@ -1,6 +1,5 @@
 Weather Damage Report
 ================
-Victor Wildner
 
 > The basic goal of this project is to explore the U.S. National Oceanic
 > and Atmospheric Administration’s (NOAA) storm database, seeking to
@@ -8,6 +7,36 @@ Victor Wildner
 > this study is to enable full-research reproducibility, using literate
 > programming for every
     step.
+
+## Tools Used
+
+  - R language compiler
+  - R base graphic devices
+  - Tidyverse library packages
+  - Cowplot library package
+  - RMarkdown library package
+  - Knitr library package
+
+## Files
+
+  - **Raw data set**: [Storm Database](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2)
+  - **[CODEBOOK](https://github.com/vcwild/weather-report/blob/process/report.html)**:
+    step-by-step book explaining the code
+    processing.
+  - **[Figures](https://github.com/vcwild/rep-data/tree/master/PA1_template_files/figure-html)**:
+    the plotted images
+  - **[PA1_template.Rmd](https://github.com/vcwild/rep-data/blob/master/PA1_template.Rmd)**: the script to compile the project from source
+
+## Build from Source
+
+Inside the project root folder, execute the following
+
+```
+R
+library(rmarkdown)
+rmarkdown::render("PA1_template.Rmd", "html_document")
+```
+# CODEBOOK
 
 ## Data Processing
 
