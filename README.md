@@ -5,8 +5,7 @@ Weather Damage Report
 > and Atmospheric Administration’s (NOAA) storm database, seeking to
 > answer some questions about severe weather events. The main focus of
 > this study is to allow full-research reproducibility, using literate
-> programming for every
-    step in the analysis.
+> programming for each iteration.
 
 ## Tools Used
 
